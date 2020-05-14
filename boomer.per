@@ -1,0 +1,117 @@
+
+;;; Dark Age only rules
+(defrule
+    (current-age == dark-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 85)
+    (set-strategic-number sn-wood-gatherer-percentage 15)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (disable-self)
+)
+
+(defrule
+    (can-research feudal-age)
+    (civilian-population >= 22)
+=>
+    (research feudal-age)
+)
+
+;;; Feudal Age only rules
+(defrule
+    (current-age == feudal-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 50)
+    (set-strategic-number sn-wood-gatherer-percentage 25)
+    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+    (disable-self)
+)
+
+(defrule
+    (can-research castle-age)
+=>
+    (research castle-age)
+)
+
+;;; Castle Age only rules
+(defrule
+    (current-age == castle-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 40)
+    (set-strategic-number sn-wood-gatherer-percentage 25)
+    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-stone-gatherer-percentage 10)
+    (disable-self)
+)
+
+(defrule
+    (can-research imperial-age)
+=>
+    (research imperial-age)
+)
+
+;;; Imperial Age only rules
+(defrule
+    (current-age == imperial-age)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 40)
+    (set-strategic-number sn-wood-gatherer-percentage 25)
+    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-stone-gatherer-percentage 10)
+    (disable-self)
+)
+
+
+
+;;; Macro Rules
+(defrule
+    (and
+        (can-train villager)
+        (civilian-population < 100)
+
+    )
+=>
+    (train villager)
+)
+
+(defrule
+    (housing-headroom < 5)
+    (population-headroom != 0)
+    (can-build house)
+=>
+    (build house)
+)
+
+(defrule
+    (resource-found wood)
+    (dropsite-min-distance wood > 3)
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
+)
+
+(defrule
+    (resource-found food)
+    (dropsite-min-distance food > 3)
+    (can-build mill)
+=>
+    (build mill)
+)
+
+(defrule
+    (building-type-count-total farm < 6)
+    (can-build farm)
+=>
+    (build farm)
+)
+
+(defrule
+    (current-age >= feudal-age)
+    (resource-found gold)
+    (dropsite-min-distance gold > 3)
+    (can-build mining-camp)
+=>
+    (build mining-camp)
+)
+
