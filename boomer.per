@@ -1,18 +1,94 @@
+; Macro Constants 
+(defconst camp-distance 15)
+(defconst food-distance 15)
+(defconst wood-distance 15)
+(defconst mill-distance 17)
+(defconst seperation-distance 4)
 
+(defconst darkage-camp-count 1)
+(defconst feudalage-camp-count 4)
+(defconst castleage-camp-count 10)
+
+(defconst darkage-mill-count 2)
+(defconst feudalage-mill-count 4)
+(defconst castleage-mill-count 6)
+
+; Variable
+(defconst mill-count 0)
+
+; Goals
+(defconst boom-goal 1)
+(defconst defend-goal 2)
+(defconst attack-goal 3)
+(defconst farm-goal 4)
+
+(defconst raid-goal 5)
+(defconst kill-goal 6)
+
+; Unit IDs
+(defconst female-forager 355)
+(defconst male-forager 353)
+
+(defrule
+    (true)
+=> 
+    (set-strategic-number sn-percent-civilian-explorers 0)
+    (set-strategic-number sn-total-number-explorers 1)
+    (set-strategic-number sn-number-explore-groups 1)
+    (set-strategic-number sn-minimum-explore-group-size 1)
+
+    (set-strategic-number sn-intelligent-gathering 1)
+
+    (set-strategic-number sn-attack-intelligence 1)
+
+    (set-strategic-number sn-enable-boar-hunting 2)
+
+    (set-strategic-number sn-food-dropsite-distance 12)
+    (set-strategic-number sn-maximum-hunt-drop-distance 20)
+    (set-strategic-number sn-maximum-food-drop-distance 12)
+
+    (set-strategic-number sn-camp-max-distance camp-distance)
+    (set-strategic-number sn-mill-max-distance mill-distance)
+
+    (set-strategic-number sn-dropsite-separation-distance seperation-distance)
+    (set-strategic-number sn-allow-adjacent-dropsites 0)
+
+    (set-strategic-number sn-maximum-attack-group-size 30)
+
+    (set-goal farm-goal 0)
+
+    ;;; TODO: MAYBE REMOVE 
+    (disable-self)
+)
 ;;; Dark Age only rules
 (defrule
     (current-age == dark-age)
+	(civilian-population < 6)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 85)
-    (set-strategic-number sn-wood-gatherer-percentage 15)
+    (set-strategic-number sn-food-gatherer-percentage 100)
+    (set-strategic-number sn-wood-gatherer-percentage 0)
     (set-strategic-number sn-gold-gatherer-percentage 0)
     (set-strategic-number sn-stone-gatherer-percentage 0)
+
+    (set-goal mill-count darkage-mill-count)
+    (disable-self)
+)
+
+(defrule
+    (current-age == dark-age)
+	(civilian-population >= 6)
+=>
+    (set-strategic-number sn-food-gatherer-percentage 60)
+    (set-strategic-number sn-wood-gatherer-percentage 40)
+    (set-strategic-number sn-gold-gatherer-percentage 0)
+    (set-strategic-number sn-stone-gatherer-percentage 0)
+
     (disable-self)
 )
 
 (defrule
     (can-research feudal-age)
-    (civilian-population >= 22)
+    (civilian-population >= 18)
 =>
     (research feudal-age)
 )
@@ -21,10 +97,13 @@
 (defrule
     (current-age == feudal-age)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 50)
-    (set-strategic-number sn-wood-gatherer-percentage 25)
-    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-food-gatherer-percentage 30)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 30)
     (set-strategic-number sn-stone-gatherer-percentage 0)
+    (set-strategic-number sn-percent-civilian-builders 10)
+
+    (set-goal mill-count feudalage-mill-count)
     (disable-self)
 )
 
@@ -38,10 +117,13 @@
 (defrule
     (current-age == castle-age)
 =>
-    (set-strategic-number sn-food-gatherer-percentage 40)
-    (set-strategic-number sn-wood-gatherer-percentage 25)
-    (set-strategic-number sn-gold-gatherer-percentage 25)
+    (set-strategic-number sn-food-gatherer-percentage 20)
+    (set-strategic-number sn-wood-gatherer-percentage 30)
+    (set-strategic-number sn-gold-gatherer-percentage 30)
     (set-strategic-number sn-stone-gatherer-percentage 10)
+    (set-strategic-number sn-percent-civilian-builders 10)
+
+    (set-goal mill-count castleage-mill-count)
     (disable-self)
 )
 
@@ -62,18 +144,65 @@
     (disable-self)
 )
 
+;;; Military Rules
 
-
-;;; Macro Rules
-(defrule
-    (and
-        (can-train villager)
-        (civilian-population < 100)
-
-    )
-=>
-    (train villager)
+(defrule 
+    (soldier-count > 20)
+    =>
+    (set-strategic-number sn-enable-offensive-priority 1)
+    (attack-now)
 )
+
+;
+(defrule
+	(current-age == dark-age)
+	(building-type-count-total lumber-camp >= 1)
+
+    (or	(unit-type-count villager >= 12)
+        (wood-amount >= 110))
+
+    (or	(unit-type-count villager < 20)
+    (or	(building-type-count-total lumber-camp >= 2)
+        (wood-amount >= 110)))
+
+    (or	(unit-type-count villager < 30)
+    (or	(building-type-count-total mining-camp >= 1)
+        (wood-amount >= 110)))
+=>
+	(set-goal farm-goal 1)
+)
+
+(defrule
+    (current-age > dark-age)
+    (idle-farm-count < 2)
+    (wood-amount > 400)
+    (building-type-count-total farm < 2)
+    =>
+    (set-goal farm-goal 1)
+)
+
+(defrule
+    (or
+        (or
+            (unit-type-count female-forager > 0)
+            (unit-type-count male-forager > 0)
+        )
+        (food-amount > 1000)
+    )
+    =>
+    (set-goal farm-goal 0)
+)
+
+(defrule
+    (goal farm-goal 1)
+    (can-build farm)
+    (wood-amount > 400)
+    (idle-farm-count < 1)
+=>
+    (build farm)
+)
+
+;; Macro Rules
 
 (defrule
     (housing-headroom < 5)
@@ -84,8 +213,155 @@
 )
 
 (defrule
+    (current-age == dark-age)
+    (civilian-population >= 18)
+    (building-type-count barracks < 1)
+    (can-build barracks)
+=>
+    (build barracks)
+)
+
+(defrule
+    (building-type-count-total archery-range < 2)
+    (can-build archery-range)
+    =>
+    (build archery-range)
+)
+
+(defrule
+    (building-type-count-total siege-workshop < 1)
+    (can-build siege-workshop)
+    =>
+    (build siege-workshop)
+)
+
+(defrule
+    (building-type-count archery-range > 1)
+    (building-type-count-total blacksmith == 0)
+    (can-build blacksmith)
+    =>
+    (build blacksmith)
+)
+
+(defrule
+    (building-type-count-total university == 0)
+    (can-build university)
+    =>
+    (build university)
+)
+
+(defrule
+    (wood-amount >= 500)
+    (food-amount >= 500)
+    (gold-amount >= 500)
+    (can-build archery-range)
+    =>
+    (build archery-range) 
+)
+
+(defrule
+    (building-type-count-total archery-range > 1)
+    (can-train archer-line)
+    =>
+    (train archer-line)
+)
+
+(defrule
+    (can-train mangonel-line)
+    =>
+    (train mangonel-line)
+)
+
+(defrule
+    (can-research ri-fletching)
+    =>
+    (research ri-fletching)
+)
+
+(defrule
+    (can-research ri-bodkin-arrow)
+    =>
+    (research ri-bodkin-arrow)
+)
+
+
+(defrule
+    (can-research ri-crossbow)
+    =>
+    (research ri-crossbow)
+)
+
+(defrule
+    (can-research ri-ballistics)
+    =>
+    (research ri-ballistics)
+)
+
+(defrule
+    (can-research ri-arbalest)
+    =>
+    (research ri-arbalest)
+)
+
+(defrule
+    (can-research ri-padded-archer-armor)
+    =>
+    (research ri-padded-archer-armor)
+)
+
+(defrule
+    (can-research ri-leather-archer-armor)
+    =>
+    (research ri-leather-archer-armor)
+)
+
+(defrule
+    (can-research ri-horse-collar)
+    =>
+    (research ri-horse-collar)
+)
+
+(defrule
+    (can-research ri-loom)
+    (civilian-population >= 18)
+=>
+    (research ri-loom)
+)
+
+(defrule
+    (can-research ri-bow-saw)
+    => 
+    (research ri-bow-saw)
+)
+
+(defrule
+    (current-age == dark-age)
     (resource-found wood)
-    (dropsite-min-distance wood > 3)
+    (building-type-count-total mill > 0)
+    (dropsite-min-distance wood > 1)
+    (building-type-count-total lumber-camp < darkage-camp-count)
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
+)
+
+(defrule
+    (current-age == feudal-age)
+    (resource-found wood)
+    (building-type-count-total mill > 0)
+    (dropsite-min-distance wood > 1)
+    (building-type-count-total lumber-camp < feudalage-camp-count )
+    (can-build lumber-camp)
+=>
+    (build lumber-camp)
+)
+
+(defrule
+    (current-age == castle-age)
+    (resource-found wood)
+    (building-type-count-total mill > 0)
+    (dropsite-min-distance wood > 1)
+    (building-type-count-total lumber-camp < castleage-camp-count )
     (can-build lumber-camp)
 =>
     (build lumber-camp)
@@ -93,25 +369,63 @@
 
 (defrule
     (resource-found food)
+    (building-type-count-total house > 1)
     (dropsite-min-distance food > 3)
     (can-build mill)
+    (building-type-count-total mill <= mill-count)
 =>
     (build mill)
 )
 
 (defrule
-    (building-type-count-total farm < 6)
-    (can-build farm)
-=>
-    (build farm)
-)
-
-(defrule
-    (current-age >= feudal-age)
     (resource-found gold)
     (dropsite-min-distance gold > 3)
+    (building-type-count-total lumber-camp > 1)
     (can-build mining-camp)
 =>
     (build mining-camp)
+)
+
+(defrule
+    (resource-found stone)
+    (dropsite-min-distance stone > 3)
+    (building-type-count-total mining-camp > 1)
+    (can-build mining-camp)
+=>
+    (build mining-camp)
+)
+(defrule
+   (can-research ri-wheel-barrow)
+   =>
+   (research ri-wheel-barrow)
+)
+
+(defrule
+   (can-research ri-double-bit-axe)
+   =>
+   (research ri-double-bit-axe)
+)
+
+(defrule
+   (can-research ri-gold-mining)
+   =>
+   (research ri-gold-mining)
+)
+
+(defrule
+    (current-age == dark-age)
+    (civilian-population < 25)
+    (can-train villager)
+    =>
+    (train villager)
+)
+
+(defrule
+    (current-age > dark-age)
+    (can-train villager)
+    (civilian-population < 130)
+
+=>
+    (train villager)
 )
 
